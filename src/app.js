@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import "dotenv/config";
 
+
 const app = express();
 
 // basic configuration
@@ -17,8 +18,9 @@ app.use(cors({
     allowedHeaders: ["Authorization", "Content-Type"]
 }));
 
-app.get("/health", (req, res) => {
-    res.sendStatus(200);
-});
+// import the routes
+import healthcheckRouter from "./routes/healthcheck.route.js";
+
+app.use("/api/v1/healthcheck", healthcheckRouter);
 
 export { app };
