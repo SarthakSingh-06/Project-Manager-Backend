@@ -11,5 +11,5 @@ connectDB()
 })
 .catch((error) => {
     console.log("Connection to database failed!");
-    throw new ApiError();
+    throw new ApiError(500, error.message);
 });
