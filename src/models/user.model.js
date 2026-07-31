@@ -1,5 +1,7 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import "dotenv/config";
 
 const userSchema = new Schema({
     profileImage: {
@@ -69,6 +71,10 @@ userSchema.pre("save", async function(next) {
 userSchema.methods.isPasswordCorrect = async function(password) {
     const result = await bcrypt.compare(password, this.password);
     return result;
+};
+
+userSchema.methods.generateAccessToken = function() {
+    
 };
 
 export const User = model("User", userSchema);
