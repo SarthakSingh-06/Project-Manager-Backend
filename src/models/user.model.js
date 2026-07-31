@@ -1,6 +1,7 @@
 import { Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { randomBytes, createHmac } from "node:crypto";
 import "dotenv/config";
 
 const userSchema = new Schema({
@@ -74,7 +75,32 @@ userSchema.methods.isPasswordCorrect = async function(password) {
 };
 
 userSchema.methods.generateAccessToken = function() {
-    
+    const token = jwt.sign({
+        _id: this._id,
+        email: this.email,
+        username: this.username
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY });
+    return token;
 };
+
+userSchema.methods.generateRefershToken = function() {
+    const token = jwt.sign({
+        _id: this._id
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRY });
+    return token;
+};
+
+userSchema.methods.generateTemporaryToken = function() {
+    const unHashed = randomBytes(128).toString("hex");
+    const hashedToken = createHmac("sha512").update(unHashed).digest("hex");
+
+    // above hashed token will expire in 20 mins
+    const tokenExpiry = Date.now() + (20*60*1000);
+    return { unHashed, hashedToken, tokenExpiry };
+}
 
 export const User = model("User", userSchema);
