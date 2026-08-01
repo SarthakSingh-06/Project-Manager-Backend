@@ -52,7 +52,7 @@ export const emailVerificatinMailgenContent = (username, verificationURL) => {
                 button: {
                     color: "#0d6dda",
                     text: "Verify your email",
-                    link: passwordResetURL
+                    link: verificationURL
                 }
             },
             outro: "Need help, or have questions? Just reply to this email, we'd love to help."
@@ -70,7 +70,7 @@ export const forgorPasswordMailgenContent = (username, passwordResetURL) => {
                 button: {
                     color: "#0d6dda",
                     text: "Change password",
-                    link: verificationURL
+                    link: passwordResetURL
                 }
             },
             outro: "Need help, or have questions? Just reply to this email, we'd love to help."

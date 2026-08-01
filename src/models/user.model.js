@@ -63,10 +63,9 @@ const userSchema = new Schema({
 });
 
 userSchema.pre("save", async function(next) {
-    if (!this.isModified("password")) next();
+    if (!this.isModified("password")) return;
 
     this.password = await bcrypt.hash(this.password, 12);
-    next();
 });
 
 userSchema.methods.isPasswordCorrect = async function(password) {
@@ -96,7 +95,7 @@ userSchema.methods.generateRefershToken = function() {
 
 userSchema.methods.generateTemporaryToken = function() {
     const unHashed = randomBytes(128).toString("hex");
-    const hashedToken = createHmac("sha512").update(unHashed).digest("hex");
+    const hashedToken = createHmac("sha512", unHashed).digest("hex");
 
     // above hashed token will expire in 20 mins
     const tokenExpiry = Date.now() + (20*60*1000);

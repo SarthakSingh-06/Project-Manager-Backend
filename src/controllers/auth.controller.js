@@ -21,7 +21,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 };
 
 export const registerUser = asyncHandler(async (req, res) => {
-    const { email, username, password, role } = req.body;
+    const { email, username, password, role, fullname } = req.body;
 
     const existingUser = await User.findOne({
         $or: [{ email }, { username }]
@@ -31,7 +31,7 @@ export const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(409, "User with email or username already exists");
 
     const newUser = await User.create({
-        email, password, username,
+        email, password, username, fullname,
         isEmailVerified: false
     });
 
@@ -40,7 +40,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     newUser.emailVerificationToken = hashedToken;
     newUser.emailVerificationTokenExpiry = tokenExpiry;
 
-    await user.save({ validateBeforeSave: false });
+    await newUser.save({ validateBeforeSave: false });
 
     await sendEmail({
         email: newUser?.email,
