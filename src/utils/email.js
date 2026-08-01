@@ -42,7 +42,7 @@ export const sendEmail = async (options) => {
     })();
 };
 
-export const emailVerificatinMailgenContent = (username, passwordResetURL) => {
+export const emailVerificatinMailgenContent = (username, verificationURL) => {
     return {
         body: {
             name: username, 
@@ -60,7 +60,7 @@ export const emailVerificatinMailgenContent = (username, passwordResetURL) => {
     };
 };
 
-export const forgorPasswordMailgenContent = (username, verificationURL) => {
+export const forgorPasswordMailgenContent = (username, passwordResetURL) => {
     return {
         body: {
             name: username, 
