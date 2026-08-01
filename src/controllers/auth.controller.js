@@ -1,9 +1,9 @@
-import { access } from "node:fs";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { emailVerificatinMailgenContent, sendEmail } from "../utils/email.js";
+import { registerPostRequestValidationSchema } from "../validators/user.validator.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -21,7 +21,12 @@ const generateAccessAndRefreshToken = async (userId) => {
 };
 
 export const registerUser = asyncHandler(async (req, res) => {
-    const { email, username, password, role, fullname } = req.body;
+    const validationResult = await registerPostRequestValidationSchema.safeParseAsync(req.body);
+
+    if (validationResult.error)
+        throw new ApiError(400, validationResult.error.format());
+
+    const { email, username, password, role, fullname } = validationResult.data;
 
     const existingUser = await User.findOne({
         $or: [{ email }, { username }]
@@ -49,7 +54,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
 
     const createdNewUser = await User.findById(newUser._id).select(
-        "-password -refreshToken -forgotPasswordToken -forgotPasswordTokenExpiry -emailVerificationToken -emailVerificationTokenExpiry"
+        "-password -refreshToken -forgotPasswordToken -forgotPasswordTokenExpiry -emailVerificationToken -emailVerificationTokenExpiry -createdAt -updatedAt"
     );
 
     if (!createdNewUser)
