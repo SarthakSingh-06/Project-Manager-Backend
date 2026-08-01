@@ -45,7 +45,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     await sendEmail({
         email: newUser?.email,
         subject: "Please get your email verified",
-        mailContent: emailVerificatinMailgenContent(newUser.username, `${req.protocol}://${req.get("host")}/api/v1/users/vefiry-email/${unHashed}`)
+        mailContent: emailVerificatinMailgenContent(newUser.username, `${req.protocol}://${req.get("host")}/api/v1/auth/vefiry-email/${unHashed}`)
     });
 
     const createdNewUser = await User.findById(newUser._id).select(
