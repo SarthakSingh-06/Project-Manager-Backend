@@ -84,7 +84,7 @@ userSchema.methods.generateAccessToken = function() {
     return token;
 };
 
-userSchema.methods.generateRefershToken = function() {
+userSchema.methods.generateRefreshToken = function() {
     const token = jwt.sign({
         _id: this._id
     },

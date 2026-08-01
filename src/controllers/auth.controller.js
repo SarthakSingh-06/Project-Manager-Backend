@@ -1,9 +1,13 @@
+import { access } from "node:fs";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { emailVerificatinMailgenContent, sendEmail } from "../utils/email.js";
-import { registerPostRequestValidationSchema } from "../validators/user.validator.js";
+import {
+    registerPostRequestValidationSchema,
+    loginPostRequestValidationSchema
+} from "../validators/user.validator.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -16,7 +20,7 @@ const generateAccessAndRefreshToken = async (userId) => {
         return { accessToken, refreshToken };
     } catch (error) {
         console.log("Access and refresh token generation failed");
-        throw new ApiError(500, error.message);        
+        throw new ApiError(500, error.message);
     }
 };
 
@@ -61,4 +65,37 @@ export const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Something went wrong while registering the user");
 
     return res.status(201).json(new ApiResponse(201, { user: createdNewUser }, "User has been registered successfully and verification email has been sent to you"));
+});
+
+export const loginUser = asyncHandler(async (req, res) => {
+    const validationResult = await loginPostRequestValidationSchema.safeParseAsync(req.body);
+    if (validationResult.error)
+        throw new ApiError(400, validationResult.error.format());
+
+    const { email, password } = validationResult.data;
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser)
+        throw new ApiError(401, `User with email ${email} does not exist`);
+
+    if (!existingUser.isPasswordCorrect(password))
+        throw new ApiError(401, "Incorrect password");
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(existingUser._id);
+
+    const loggedInUser = await User.findById(existingUser._id).select(
+        "-password -refreshToken -forgotPasswordToken -forgotPasswordTokenExpiry -emailVerificationToken -emailVerificationTokenExpiry -createdAt -updatedAt"
+    );
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: true
+    };
+
+    return res
+        .status(200)
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
+        .json( new ApiResponse(200, { userData: loggedInUser }, "User logged in successfully") );
 });
