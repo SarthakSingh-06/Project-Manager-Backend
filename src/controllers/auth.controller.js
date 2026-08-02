@@ -3,10 +3,13 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { emailVerificatinMailgenContent, sendEmail } from "../utils/email.js";
+import { emailVerificatinMailgenContent, forgorPasswordMailgenContent, sendEmail } from "../utils/email.js";
 import {
     registerPostRequestValidationSchema,
-    loginPostRequestValidationSchema
+    loginPostRequestValidationSchema,
+    forgotPasswordRequestValidationSchema,
+    resetPasswordRequestValidationSchema,
+    changeCurrentPasswordRequestValidationSchema
 } from "../validators/user.validator.js";
 import jwt from "jsonwebtoken";
 import { createHmac } from "node:crypto";
@@ -225,4 +228,88 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new ApiError(401, error.message);
     }
+});
+
+export const forgotPasswordRequest = asyncHandler(async (req, res) => {
+    const validationResult = await forgotPasswordRequestValidationSchema.safeParseAsync(req.body);
+    if (validationResult.error)
+        throw new ApiError(400, validationResult.error.format());
+
+    const { email } = validationResult.data;
+
+    const user = await User.findOne({ email });
+
+    if (!user)
+        throw new ApiError(404, `User with email ${email} does not exist`);
+
+    const { unHashed, hashedToken, tokenExpiry } = await user.generateTemporaryToken();
+    user.forgotPasswordToken = hashedToken;
+    user.forgotPasswordTokenExpiry = tokenExpiry;
+    await user.save({ validateBeforeSave: false });
+
+    await sendEmail({
+        email: user.email,
+        subject: "Password reset request",
+        mailContent: forgorPasswordMailgenContent(user.username, `${req.protocol}://${req.get("host")}/api/v1/auth/reset-password/${unHashed}`)
+    });
+
+    const cookieOptions = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, {}, "Reset password mail has been sent to you")
+        );
+});
+
+export const resetForgotPassword = asyncHandler(async (req, res) => {
+    const validationResult = await resetPasswordRequestValidationSchema.safeParseAsync(req.body);
+    if (validationResult.error)
+        throw new ApiError(400, validationResult.error.format());
+
+    const { newPassword } = validationResult.data;
+
+    const resetToken = req.body.resetToken;
+    const newHash = await createHmac("sha512", resetToken).digest("hex");
+
+    const user = await User.findOne({
+        forgotPasswordToken: newHash,
+        forgotPasswordTokenExpiry: { $gt: Date.now() }
+    });
+
+    if (!user)
+        throw new ApiError(404, "Token is invalid or expired");
+
+    user.forgotPasswordToken = undefined;
+    user.forgotPasswordTokenExpiry = undefined;
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json( new ApiResponse(200, {}, "Password reset successfully") );
+});
+
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+    const validationResult = await changeCurrentPasswordRequestValidationSchema.safeParseAsync(req.body);
+    if (validationResult.error)
+        throw new ApiError(400, validationResult.error.format());
+
+    const { oldPassword, newPassword } = validateBeforeSave.data;
+    const user = await User.findById(req.user?.id);
+
+    const correctPassword = await user.isPasswordCorrect(oldPassword);
+
+    if (!correctPassword)
+        throw new ApiError(401, "Incorrect current password provided");
+
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json( new ApiResponse(200, {}, "Password changed successfully") );
 });
