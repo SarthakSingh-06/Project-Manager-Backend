@@ -12,7 +12,7 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/logout", verifyJWT, logoutUser);
 router.get("/current-user", verifyJWT, getCurrentUser);
-router.get("/verify-email/:verificationToken", verifyJWT, getCurrentUser);
+router.get("/verify-email/:verificationToken", verifyJWT, verifyEmail);
 router.post("/resend-email-verification/", verifyJWT, resendEmailVerificationMail);
 router.post("/refresh-token/", verifyJWT, refreshAccessToken);
 
