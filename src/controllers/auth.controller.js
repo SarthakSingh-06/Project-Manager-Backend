@@ -1,4 +1,4 @@
-import { access } from "node:fs";
+import "dotenv/config";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -8,6 +8,8 @@ import {
     registerPostRequestValidationSchema,
     loginPostRequestValidationSchema
 } from "../validators/user.validator.js";
+import jwt from "jsonwebtoken";
+import { createHmac } from "node:crypto";
 
 const generateAccessAndRefreshToken = async (userId) => {
     try {
@@ -125,4 +127,102 @@ export const logoutUser = asyncHandler(async (req, res) => {
         .json(
             new ApiResponse(200, {}, "User logged out")
         );
+});
+
+export const getCurrentUser = asyncHandler(async (req, res) => {
+    const user = req.user;
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, { user }, "Current user fetched successfully")
+        );
+});
+
+export const verifyEmail = asyncHandler(async (req, res) => {
+    const verificationToken = req.params.verificationToken;
+    if (!verificationToken)
+        throw new ApiError(400, "Email verification token is missing");
+
+    const newHash = createHmac("sha512", verificationToken).digest("hex");
+
+    const user = await User.findOne({
+        emailVerificationToken: newHash,
+        emailVerificationTokenExpiry: { $gt: Date.now() }
+    });
+
+    if (!user)
+        throw new ApiError(400, "Your email verification token is invalid or expired. Please generate a new one.");
+
+    // cleanups
+    user.emailVerificationToken = undefined;
+    user.emailVerificationTokenExpiry = undefined;
+
+    user.isEmailVerified = true;
+    await user.save({ validateBeforeSave: false });
+
+    return res
+        .status(200)
+        .json(
+            new ApiResponse(200, user, "Your email has beed verified")
+        );
+});
+
+export const resendEmailVerificationMail = asyncHandler(async (req, res) => {
+    const existingUser = await User.findById(req.user?.id);
+
+    if (!existingUser)
+        throw new ApiError(404, "User does not exist");
+    if (existingUser.isEmailVerified)
+        throw new ApiError(409, "Email is already verified");
+
+    const { unHashed, hashedToken, tokenExpiry } = existingUser.generateTemporaryToken();
+
+    existingUser.emailVerificationToken = hashedToken;
+    existingUser.emailVerificationTokenExpiry = tokenExpiry;
+
+    await existingUser.save({ validateBeforeSave: false });
+    await sendEmail({
+        email: existingUser?.email,
+        subject: "Please get your email verified",
+        mailContent: emailVerificatinMailgenContent(existingUser.username, `${req.protocol}://${req.get("host")}/api/v1/auth/vefiry-email/${unHashed}`)
+    });
+
+    return res.status(200).json(new ApiResponse(200, {}, "Verification email has been sent to you"));
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+    const incomingRefreshToken = req.cookies.refreshToken;
+
+    if (!incomingRefreshToken)
+        throw new ApiError(401, "Unauthorized access");
+
+    try {
+        const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decodedToken?._id);
+
+        if (!user)
+            throw new ApiError(401, "Invalid refresh token");
+        if (incomingRefreshToken !== user?.refreshToken)
+            throw new ApiError(401, "Refresh token is expired");
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: true
+        };
+
+        const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user?._id);
+        user.refreshToken = newRefreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", newRefreshToken, cookieOptions)
+            .json(
+                new ApiResponse(200, { accessToken, refreshToken: newRefreshToken }, "Access token refreshed")
+            );
+
+    } catch (error) {
+        throw new ApiError(401, error.message);
+    }
 });
