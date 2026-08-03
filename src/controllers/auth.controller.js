@@ -75,7 +75,7 @@ export const registerUser = asyncHandler(async (req, res) => {
 export const loginUser = asyncHandler(async (req, res) => {
     const validationResult = await loginPostRequestValidationSchema.safeParseAsync(req.body);
     if (validationResult.error)
-        throw new ApiError(400, validationResult.error.format());
+        throw new ApiError(400, JSON.stringify(validationResult.error.format()));
 
     const { email, password } = validationResult.data;
 
@@ -84,7 +84,8 @@ export const loginUser = asyncHandler(async (req, res) => {
     if (!existingUser)
         throw new ApiError(401, `User with email ${email} does not exist`);
 
-    if (!existingUser.isPasswordCorrect(password))
+    const correctpassword = await existingUser.isPasswordCorrect(password);
+    if (!correctpassword)
         throw new ApiError(401, "Incorrect password");
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(existingUser._id);
@@ -187,7 +188,7 @@ export const resendEmailVerificationMail = asyncHandler(async (req, res) => {
     await sendEmail({
         email: existingUser?.email,
         subject: "Please get your email verified",
-        mailContent: emailVerificatinMailgenContent(existingUser.username, `${req.protocol}://${req.get("host")}/api/v1/auth/vefiry-email/${unHashed}`)
+        mailContent: emailVerificatinMailgenContent(existingUser.username, `${req.protocol}://${req.get("host")}/api/v1/auth/verify-email/${unHashed}`)
     });
 
     return res.status(200).json(new ApiResponse(200, {}, "Verification email has been sent to you"));
@@ -268,11 +269,11 @@ export const forgotPasswordRequest = asyncHandler(async (req, res) => {
 export const resetForgotPassword = asyncHandler(async (req, res) => {
     const validationResult = await resetPasswordRequestValidationSchema.safeParseAsync(req.body);
     if (validationResult.error)
-        throw new ApiError(400, validationResult.error.format());
+        throw new ApiError(400, JSON.stringify(validationResult.error.format()));
 
     const { newPassword } = validationResult.data;
 
-    const resetToken = req.body.resetToken;
+    const resetToken = req.params.resetToken;
     const newHash = await createHmac("sha512", resetToken).digest("hex");
 
     const user = await User.findOne({
@@ -293,12 +294,12 @@ export const resetForgotPassword = asyncHandler(async (req, res) => {
         .json( new ApiResponse(200, {}, "Password reset successfully") );
 });
 
-const changeCurrentPassword = asyncHandler(async (req, res) => {
+export const changeCurrentPassword = asyncHandler(async (req, res) => {
     const validationResult = await changeCurrentPasswordRequestValidationSchema.safeParseAsync(req.body);
     if (validationResult.error)
-        throw new ApiError(400, validationResult.error.format());
+        throw new ApiError(400, JSON.stringify(validationResult.error.format()));
 
-    const { oldPassword, newPassword } = validateBeforeSave.data;
+    const { oldPassword, newPassword } = validationResult.data;
     const user = await User.findById(req.user?.id);
 
     const correctPassword = await user.isPasswordCorrect(oldPassword);
