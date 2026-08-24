@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AvailableUserRoles } from "../utils/constants.js";
+import { AvailableUserRoles } from "../constants.js";
 
 export const registerPostRequestValidationSchema = z.object({
     email:  z.email("Zod validator: A valid email is required"),
