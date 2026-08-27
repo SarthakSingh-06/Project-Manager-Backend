@@ -55,6 +55,7 @@ const projectSchema = new mongoose.Schema({
     },
 
     updatedBy: {
+        // who last modified this project
         type: Schema.Types.ObjectId,
         ref: "User",
     },
