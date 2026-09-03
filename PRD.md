@@ -16,7 +16,11 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - **Project Admins:** Manage tasks and project content within assigned projects
 - **Team Members:** View projects, update task completion status, access project information
 
+
+
 ### 3. Core Features
+
+
 
 #### 3.1 User Authentication & Authorization
 
@@ -27,6 +31,8 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - **Token Management:** Access token refresh mechanism
 - **Role-Based Access Control:** Three-tier permission system (Admin, Project Admin, Member)
 
+
+
 #### 3.2 Project Management
 
 - **Project Creation:** Create new projects with name and description
@@ -35,12 +41,16 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - **Project Updates:** Modify project information (Admin only)
 - **Project Deletion:** Remove projects (Admin only)
 
+
+
 #### 3.3 Team Member Management
 
 - **Member Addition:** Invite users to projects via email
 - **Member Listing:** View all project team members
 - **Role Management:** Update member roles within projects (Admin only)
 - **Member Removal:** Remove team members from projects (Admin only)
+
+
 
 #### 3.4 Task Management
 
@@ -53,12 +63,16 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - **Task Assignment:** Assign tasks to specific team members
 - **Status Tracking:** Three-state status system (Todo, In Progress, Done)
 
+
+
 #### 3.5 Subtask Management
 
 - **Subtask Creation:** Add subtasks to existing tasks
 - **Subtask Updates:** Modify subtask details and completion status
 - **Subtask Deletion:** Remove subtasks (Admin/Project Admin only)
 - **Member Completion:** Allow members to mark subtasks as complete
+
+
 
 #### 3.6 Project Notes
 
@@ -68,11 +82,17 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - **Note Updates:** Modify existing notes (Admin only)
 - **Note Deletion:** Remove notes (Admin only)
 
+
+
 #### 3.7 System Health
 
 - **Health Check:** API endpoint for system status monitoring
 
+
+
 ### 4. Technical Specifications
+
+
 
 #### 4.1 API Endpoints Structure
 
@@ -124,7 +144,10 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 
 - `GET /` - System health status
 
+
+
 #### 4.2 Permission Matrix
+
 
 | Feature                    | Admin | Project Admin | Member |
 | -------------------------- | ----- | ------------- | ------ |
@@ -137,6 +160,9 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 | Create/Delete Subtasks     | ✓     | ✓             | ✗      |
 | Create/Update/Delete Notes | ✓     | ✗             | ✗      |
 | View Notes                 | ✓     | ✓             | ✓      |
+
+
+
 
 #### 4.3 Data Models
 
@@ -152,6 +178,8 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - `in_progress` - Task currently being worked on
 - `done` - Task completed
 
+
+
 ### 5. Security Features
 
 - JWT-based authentication with refresh tokens
@@ -162,12 +190,16 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - File upload security with Multer middleware
 - CORS configuration for cross-origin requests
 
+
+
 ### 6. File Management
 
 - Support for multiple file attachments on tasks
 - Files stored in public/images directory
 - File metadata tracking (URL, MIME type, size)
 - Secure file upload handling
+
+
 
 ### 7. Success Criteria
 
@@ -178,3 +210,4 @@ Project Manager Backend is a RESTful API service designed to support collaborati
 - File attachment capability for enhanced collaboration
 - Email notification system for user verification and password reset
 - Comprehensive API documentation through endpoint structure
+
